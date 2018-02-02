@@ -37,7 +37,7 @@ import static org.jenkinsci.plugins.github.util.FluentIterableWrapper.from;
 import static org.jenkinsci.plugins.github.util.JobInfoHelpers.isAlive;
 import static org.jenkinsci.plugins.github.util.JobInfoHelpers.isBuildable;
 import static org.jenkinsci.plugins.github.webhook.WebhookManager.forHookUrl;
-
+import static org.kohsuke.github.GHEvent.PUSH;
 
 /**
  * Receives github hook.
@@ -117,6 +117,12 @@ public class GitHubWebHook implements UnprotectedRootAction {
     @SuppressWarnings("unused")
     @RequirePostWithGHHookPayload
     public void doIndex(@Nonnull @GHEventHeader GHEvent event, @Nonnull @GHEventPayload String payload) {
+        LOGGER.debug("GHEventPayload:  {}", payload);
+        if (event == PUSH && payload.indexOf("\"login\":\"smartrecruiters-jenkins\"") > 0
+                && payload.indexOf("\"ref\":\"refs/heads/master\"") > 0) {
+            LOGGER.info("Skipping GHEvent for payload: {}", payload);
+            return;
+        }
         GHSubscriberEvent subscriberEvent =
                 new GHSubscriberEvent(SCMEvent.originOf(Stapler.getCurrentRequest()), event, payload);
         from(GHEventsSubscriber.all())
@@ -172,7 +178,6 @@ public class GitHubWebHook implements UnprotectedRootAction {
          *
          * @param pusherName        the pusher name.
          * @param changedRepository the changed repository.
-         *
          * @since 1.8
          */
         public abstract void onPushRepositoryChanged(String pusherName, GitHubRepositoryName changedRepository);
